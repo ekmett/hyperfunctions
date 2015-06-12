@@ -53,7 +53,7 @@ instance Profunctor Hyper where
 
 instance Strong Hyper where
   first' = first
-  second' = second'
+  second' = second
 
 instance Functor (Hyper a) where
   fmap f (Hyper h x) = Hyper (fmap (f .) h) x
