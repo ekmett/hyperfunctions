@@ -15,13 +15,13 @@ import Prelude hiding ((.),id)
 data Hyper a b where
   Hyper :: Representable g => g (g a -> b) -> Rep g -> Hyper a b
 
--- ana :: (x -> (x -> a) -> b) -> x -> Hyper a b
--- ana = Hyper
+ana :: (x -> (x -> a) -> b) -> x -> Hyper a b
+ana = Hyper
 
 instance Category Hyper where
   id = Hyper (Identity runIdentity) ()
-  Hyper f x . Hyper g y = Hyper 
-    (Compose $ fmap (\phi -> fmap (\psi -> phi . fmap psi . getCompose) g) f) 
+  Hyper f x . Hyper g y = Hyper
+    (Compose $ fmap (\phi -> fmap (\psi -> phi . fmap psi . getCompose) g) f)
     (x,y)
 
 instance Arrow Hyper where
@@ -62,19 +62,40 @@ instance Functor (Hyper a) where
 base :: b -> Hyper a b
 base b = Hyper (Identity (const b)) ()
 
+-- |
+-- @
+-- invoke (push f q) k = f (invoke k q)
+-- @
+push :: (a -> b) -> Hyper a b -> Hyper a b
+push f q = uninvoke $ \k -> f (invoke k q)
+
+-- | Unroll a hyperfunction
+unroll :: Hyper a b -> (Hyper a b -> a) -> b
+unroll (Hyper (f :: f (f a -> b)) x) k = index f x (tabulate (k . Hyper f))
+
+-- | Inefficient
+roll :: ((Hyper a b -> a) -> b) -> Hyper a b
+roll = Hyper (mapH unroll)
+
+mapH :: (x -> y) -> ((x -> a) -> b) -> (y -> a) -> b
+mapH xy xa2b ya = xa2b (ya . xy)
+
 invoke :: Hyper a b -> Hyper b a -> b
 invoke (Hyper (f :: f (f a -> b)) x) (Hyper (g :: g (g b -> a)) y) = index (index r x) y where
   -- tie a knot through state space
   r = fmap (\phi -> fmap (\psi -> phi (fmap psi r)) g) f
 
--- | 
+uninvoke :: (Hyper b a -> b) -> Hyper a b
+uninvoke = Hyper (. roll)
+
+-- |
 -- @
 -- run f = invoke f id
 -- @
 run :: Hyper a a -> a
 run (Hyper f x) = index r x where r = fmap (\phi -> phi r) f
 
--- | 
+-- |
 -- @
 -- 'project' . 'arr' = 'id'
 -- 'project' h a = 'invoke' h ('base' a)
@@ -82,31 +103,9 @@ run (Hyper f x) = index r x where r = fmap (\phi -> phi r) f
 project :: Hyper a b -> a -> b
 project (Hyper f x) a = index f x (tabulate (const a))
 
--- (f a -> b)
-
--- | 
--- @
--- invoke (push f q) k = f (invoke k q)
--- @
-
-push :: (a -> b) -> Hyper a b -> Hyper a b
-push = undefined
--- push f (Hyper g x) = Hyper 
---  (Pair (Identity $ \(Pair (Identity a) _) -> f a) (fmap (\ga2b (Pair _ ga) -> ga2b ga) g))
---  (Right x) where
-
--- hyper :: (Hyper b a -> b) -> Hyper a b
-
 fold :: [a] -> (a -> b -> c) -> c -> Hyper b c
 fold [] _ n = base n
 fold (x:xs) c n = push (c x) (fold xs c n)
 
--- | Unroll a hyperfunction
-out :: Hyper a b -> (Hyper a b -> a) -> b
-out (Hyper (f :: f (f a -> b)) x) k = index f x (tabulate (k . Hyper f))
-
-
--- fold :: Representable f => [Rep g] -> g (b -> c) -> c -> Hyper b c
--- fold [] _ n = base n
--- fold (x:xs) c n = push (c x) (fold xs c n)
-
+build :: (forall b c. (a -> b -> c) -> c -> Hyper b c) -> [a]
+build g = run (g (:) [])
