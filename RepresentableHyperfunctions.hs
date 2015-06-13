@@ -4,6 +4,7 @@ module RepresentableHyperfunctions where
 
 import Data.Functor.Compose
 import Data.Functor.Identity
+import Data.Functor.Product
 import Data.Functor.Rep
 import Data.Profunctor
 import Data.Profunctor.Unsafe
@@ -14,8 +15,8 @@ import Prelude hiding ((.),id)
 data Hyper a b where
   Hyper :: Representable g => g (g a -> b) -> Rep g -> Hyper a b
 
-ana :: (x -> (x -> a) -> b) -> x -> Hyper a b
-ana = Hyper
+-- ana :: (x -> (x -> a) -> b) -> x -> Hyper a b
+-- ana = Hyper
 
 instance Category Hyper where
   id = Hyper (Identity runIdentity) ()
@@ -61,24 +62,51 @@ instance Functor (Hyper a) where
 base :: b -> Hyper a b
 base b = Hyper (Identity (const b)) ()
 
+invoke :: Hyper a b -> Hyper b a -> b
+invoke (Hyper (f :: f (f a -> b)) x) (Hyper (g :: g (g b -> a)) y) = index (index r x) y where
+  -- tie a knot through state space
+  r = fmap (\phi -> fmap (\psi -> phi (fmap psi r)) g) f
+
+-- | 
+-- @
+-- run f = invoke f id
+-- @
+run :: Hyper a a -> a
+run (Hyper f x) = index r x where r = fmap (\phi -> phi r) f
+
+-- | 
+-- @
+-- 'project' . 'arr' = 'id'
+-- 'project' h a = 'invoke' h ('base' a)
+-- @
+project :: Hyper a b -> a -> b
+project (Hyper f x) a = index f x (tabulate (const a))
+
+-- (f a -> b)
+
+-- | 
+-- @
+-- invoke (push f q) k = f (invoke k q)
+-- @
+
+push :: (a -> b) -> Hyper a b -> Hyper a b
+push = undefined
+-- push f (Hyper g x) = Hyper 
+--  (Pair (Identity $ \(Pair (Identity a) _) -> f a) (fmap (\ga2b (Pair _ ga) -> ga2b ga) g))
+--  (Right x) where
+
+-- hyper :: (Hyper b a -> b) -> Hyper a b
+
+fold :: [a] -> (a -> b -> c) -> c -> Hyper b c
+fold [] _ n = base n
+fold (x:xs) c n = push (c x) (fold xs c n)
+
 -- | Unroll a hyperfunction
 out :: Hyper a b -> (Hyper a b -> a) -> b
 out (Hyper (f :: f (f a -> b)) x) k = index f x (tabulate (k . Hyper f))
 
-invoke :: Hyper a b -> Hyper b a -> b
-invoke (Hyper (f :: f (f a -> b)) x) (Hyper (g :: g (g b -> a)) y) = index (index r x) y where
-  r = fmap (\phi -> fmap (\psi -> phi (fmap psi r)) g) f
-
--- hyper :: (Hyper b a -> b) -> Hyper a b
-
--- (<<) :: (a -> b) -> Hyper a b -> Hyper a b
--- f << q = hyper (\k -> f (invoke k q))
-
--- fold :: [a] -> (a -> b -> c) -> c -> Hyper b c
--- fold [] _ n = base n
--- fold (x:xs) c n = c x << fold xs c n
 
 -- fold :: Representable f => [Rep g] -> g (b -> c) -> c -> Hyper b c
 -- fold [] _ n = base n
--- fold (x:xs) c n = c x << fold xs c n
+-- fold (x:xs) c n = push (c x) (fold xs c n)
 
