@@ -3,7 +3,10 @@ module Hyperfunctions where
 
 import Control.Arrow
 import Control.Category
+import Data.Coerce
+
 import Data.Profunctor
+import Data.Profunctor.Unsafe
 import Prelude hiding ((.),id)
 
 -- |
@@ -18,32 +21,27 @@ import Prelude hiding ((.),id)
 --
 -- @'arr' f ≡ 'arr' g@ implies @f ≡ g@ 
 --
-data Hyper a b = Hyper { runHyper :: Hyper b a -> b }
+newtype Hyper a b = Hyper { runHyper :: Hyper b a -> b }
+
+ana :: (x -> (x -> a) -> b) -> x -> Hyper a b
+ana g = f where f x = Hyper $ \z -> g x (runHyper z . f)
+
+unroll :: Hyper a b -> (Hyper a b -> a) -> b
+unroll = coerce
 
 instance Category Hyper where
   id = arr id
-  Hyper f . g = Hyper (\k -> f (g . k))
+  f . g = Hyper $ \k -> runHyper f (g . k)
 
 instance Profunctor Hyper where
-  dimap f g (Hyper h) = Hyper (g . h . dimap g f)
+  dimap f g h = Hyper (g . runHyper h . dimap g f)
 
 instance Arrow Hyper where
   arr f = r where r = push f r
-{-
-  first f = ana (go . peel) f where
-    go :: ((Hyper b c -> b) -> c) -> (Hyper b c -> (b, d)) -> (c, d)
-  first (Hyper f) = Hyper $ _ (f . Hyper) where
-    go :: ((Hyper b c -> b) -> c) -> Hyper (c, d) (b, d) -> (c, d)
-    go g (Hyper h) = (g _, undefined)
--}
-
-ana :: (x -> (x -> a) -> b) -> x -> Hyper a b
-ana g = f where
-  f x = Hyper $ \(Hyper z) -> g x (z . f)
-
-      -- h :: Hyper (b, d) (c, d) -> (b, d)
-      -- g :: (Hyper b c -> b) -> c (bound at Hyperfunction.hs:27:8)
-  
+  first = ana $ \i fac -> (unroll i (fst . fac), snd (fac i))
+  second = ana $ \i fca -> (fst (fca i), unroll i (snd . fca))
+  (***) = curry $ ana $ \(i,j) fgac -> (unroll i $ \i' -> fst $ fgac (i',j), unroll j $ \j' -> snd $ fgac (i,j'))
+  (&&&) = curry $ ana $ \(i,j) fga  -> (unroll i $ \i' ->       fga  (i',j), unroll j $ \j' ->       fga  (i,j'))
 
 -- | 
 -- @
@@ -90,34 +88,3 @@ fold xs c n = foldr (push . c) (base n) xs
 -- @
 build :: (forall b c. (a -> b -> c) -> c -> Hyper b c) -> [a]
 build g = run (g (:) [])
-
-lh :: L a b -> Hyper a b
-lh (L a as) = push a (lh as)
-
--- | An initial model of hyperfunctions
-data L a b = L (a -> b) (L a b)
-
-instance Category L where
-  id = L id id
-  L a as . L b bs = L (a . b) (as . bs)
-
-instance Profunctor L where
-  dimap f g (L a as) = L (dimap f g a) (dimap f g as)
-
-instance Strong L where
-  first' (L a as) = L (first' a) (first' as)
-  second' (L a as) = L (second' a) (second' as)
-
-instance Costrong L where
-  unfirst (L a as) = L (unfirst a) (unfirst as)
-  unsecond (L a as) = L (unsecond a) (unsecond as)
-
-instance Choice L where
-  left' (L a as) = L (left' a) (left' as)
-  right' (L a as) = L (right' a) (right' as)
-
-instance Arrow L where
-  arr f = r where r = L f r
-  first = first'
-  second = second'
-  L a as *** L b bs = L (a *** b) (as *** bs)
