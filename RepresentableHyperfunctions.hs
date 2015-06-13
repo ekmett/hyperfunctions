@@ -1,5 +1,6 @@
 {-# LANGUAGE GADTs #-}
 {-# LANGUAGE ScopedTypeVariables #-}
+{-# LANGUAGE RankNTypes #-}
 module RepresentableHyperfunctions where
 
 import Data.Functor.Compose
@@ -12,11 +13,17 @@ import Control.Arrow
 import Control.Category
 import Prelude hiding ((.),id)
 
+-- | Hyperfunctions as an explicit "nu" form, but using a representable functor
+-- to describe the "state space" of the hyperfunction. This permits memoization
+-- but doesn't require it.
+--
+-- 'arr' is a faithful functor, so
+--
+-- @'arr' f ≡ 'arr' g@ implies @f ≡ g@
+--
+
 data Hyper a b where
   Hyper :: Representable g => g (g a -> b) -> Rep g -> Hyper a b
-
-ana :: (x -> (x -> a) -> b) -> x -> Hyper a b
-ana = Hyper
 
 instance Category Hyper where
   id = Hyper (Identity runIdentity) ()
@@ -59,12 +66,18 @@ instance Strong Hyper where
 instance Functor (Hyper a) where
   fmap f (Hyper h x) = Hyper (fmap (f .) h) x
 
+-- |
+-- @
+-- 'base' = 'arr' . 'const'
+-- @
 base :: b -> Hyper a b
 base b = Hyper (Identity (const b)) ()
 
 -- |
 -- @
--- invoke (push f q) k = f (invoke k q)
+-- 'arr' f ≡ 'push' f ('arr' f)
+-- 'invoke' ('push' f q) k ≡ f ('invoke' k q)
+-- 'push' f p . 'push' g q ≡ 'push' (f . g) (p . q)
 -- @
 push :: (a -> b) -> Hyper a b -> Hyper a b
 push f q = uninvoke $ \k -> f (invoke k q)
@@ -73,7 +86,7 @@ push f q = uninvoke $ \k -> f (invoke k q)
 unroll :: Hyper a b -> (Hyper a b -> a) -> b
 unroll (Hyper (f :: f (f a -> b)) x) k = index f x (tabulate (k . Hyper f))
 
--- | Inefficient
+-- | Re-roll a hyperfunction using Lambek's lemma.
 roll :: ((Hyper a b -> a) -> b) -> Hyper a b
 roll = Hyper (mapH unroll)
 
@@ -90,19 +103,27 @@ uninvoke = Hyper (. roll)
 
 -- |
 -- @
--- run f = invoke f id
+-- 'run' f ≡ 'invoke' f 'id'
+-- 'run' ('arr' f) = 'fix' f
+-- 'run' ('push' f p . q) = f ('run' (q . p)) = f ('invoke' q p)
 -- @
 run :: Hyper a a -> a
 run (Hyper f x) = index r x where r = fmap (\phi -> phi r) f
 
 -- |
 -- @
--- 'project' . 'arr' = 'id'
--- 'project' h a = 'invoke' h ('base' a)
+-- 'project' . 'arr' ≡ 'id'
+-- 'project' h a ≡ 'invoke' h ('base' a)
 -- @
 project :: Hyper a b -> a -> b
 project (Hyper f x) a = index f x (tabulate (const a))
 
+-- |
+-- <http://arxiv.org/pdf/1309.5135.pdf Under "nice" conditions>
+--
+-- @
+-- 'fold' . 'build' = 'id'
+-- @
 fold :: [a] -> (a -> b -> c) -> c -> Hyper b c
 fold [] _ n = base n
 fold (x:xs) c n = push (c x) (fold xs c n)
