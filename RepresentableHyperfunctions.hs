@@ -61,6 +61,19 @@ instance Functor (Hyper a) where
 base :: b -> Hyper a b
 base b = Hyper (Identity (const b)) ()
 
+-- | Unroll a hyperfunction
+out :: Hyper a b -> (Hyper a b -> a) -> b
+out (Hyper (f :: f (f a -> b)) x) k = index f x (tabulate (k . Hyper f))
+
+invoke :: Hyper a b -> Hyper b a -> b
+invoke (Hyper (f :: f (f a -> b)) x) (Hyper (g :: g (g b -> a)) y) = index (index r x) y where
+  r = fmap (\phi -> fmap (\psi -> phi (fmap psi r)) g) f
+
+-- hyper :: (Hyper b a -> b) -> Hyper a b
+
+-- (<<) :: (a -> b) -> Hyper a b -> Hyper a b
+-- f << q = hyper (\k -> f (invoke k q))
+
 -- fold :: [a] -> (a -> b -> c) -> c -> Hyper b c
 -- fold [] _ n = base n
 -- fold (x:xs) c n = c x << fold xs c n
@@ -68,22 +81,4 @@ base b = Hyper (Identity (const b)) ()
 -- fold :: Representable f => [Rep g] -> g (b -> c) -> c -> Hyper b c
 -- fold [] _ n = base n
 -- fold (x:xs) c n = c x << fold xs c n
-
--- | Unroll a hyperfunction
-out :: Hyper a b -> (Hyper a b -> a) -> b
-out (Hyper (f :: f (f a -> b)) x) k = index f x (tabulate (k . Hyper f))
-
-{-
-invoke :: Hyper a b -> Hyper b a -> b
-invoke (Hyper (f :: f (f a -> b)) x) (Hyper (g :: g (g b -> a)) y) = go x y
-  go :: Rep f -> Rep g -> b
-  go i j =  where
-    fab :: f a -> b
-    fab = index f i  
-    gba :: g b -> a
-    gba = index g j
--}
-
--- (<<) :: (a -> b) -> Hyper a b -> Hyper a b
--- f << q = H (\k -> f (invoke k q))
 
