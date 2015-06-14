@@ -3,14 +3,15 @@
 {-# LANGUAGE RankNTypes #-}
 module RepresentableHyperfunctions where
 
+import Control.Applicative
+import Control.Arrow
+import Control.Category
 import Data.Functor.Compose
 import Data.Functor.Identity
 import Data.Functor.Product
 import Data.Functor.Rep
 import Data.Profunctor
 import Data.Profunctor.Unsafe
-import Control.Arrow
-import Control.Category
 import Prelude hiding ((.),id)
 
 -- | Hyperfunctions as an explicit "nu" form, but using a representable functor
@@ -24,6 +25,9 @@ import Prelude hiding ((.),id)
 
 data Hyper a b where
   Hyper :: Representable g => g (g a -> b) -> Rep g -> Hyper a b
+
+ana :: (x -> (x -> a) -> b) -> x -> Hyper a b
+ana = Hyper
 
 instance Category Hyper where
   id = Hyper (Identity runIdentity) ()
@@ -55,6 +59,23 @@ instance Arrow Hyper where
       ( index f i (fmap (`index` j) fga)
       , index g j (index fga i)
       )
+
+instance Applicative (Hyper a) where
+  pure = base
+  p <* _ = p
+  _ *> p = p
+  Hyper (f :: f (f a -> b -> c)) x <*> Hyper (g :: g (g a -> b)) y = Hyper h (x,y) where
+    h :: Compose f g (Compose f g a -> c)
+    h = tabulate $ \(i,j) (Compose fga) ->
+      index f i (fmap (`index` j) fga) (index g j (index fga i))
+
+{-
+instance Monad (Hyper a) where
+  return = base
+  Hyper (f :: f (f a -> b)) x >>= (k :: b -> Hyper a c) = Hyper f' x where
+    f' :: f (f a -> c)
+    f' = undefined
+-}
 
 instance Profunctor Hyper where
   dimap f g (Hyper h x) = Hyper (fmap (\fa2b -> g . fa2b . fmap f) h) x

@@ -3,8 +3,8 @@
 {-# LANGUAGE RankNTypes #-}
 module Hyper where
 
+import Control.Applicative
 import Control.Arrow
--- import Control.Arrow.Transformer.CoState
 import Control.Category
 import Control.Monad.Fix
 import Data.Coerce
@@ -57,12 +57,13 @@ instance Strong Hyper where
 instance Functor (Hyper a) where
   fmap f (Hyper h x) = Hyper ((f.).h) x
 
--- |
--- @
--- 'base' = 'arr' . 'const'
--- @
-base :: b -> Hyper a b
-base b = Hyper (\_ _ -> b) ()
+instance Applicative (Hyper a) where
+  pure = arr . const
+  p <* _ = p
+  _ *> p = p
+  Hyper f x <*> Hyper g y = Hyper h (x,y) where
+    h fga (i,j) = f (\i' -> fga (i',j)) i
+                $ g (\j' -> fga (i,j')) j
 
 -- | Unroll a hyperfunction
 unroll :: Hyper a b -> (Hyper a b -> a) -> b
@@ -100,7 +101,7 @@ run (Hyper f x) = fix f x
 -- |
 -- @
 -- 'project' . 'arr' ≡ 'id'
--- 'project' h a ≡ 'invoke' h ('base' a)
+-- 'project' h a ≡ 'invoke' h ('pure' a)
 -- @
 project :: Hyper a b -> a -> b
 project (Hyper f x) a = f (const a) x
@@ -112,11 +113,8 @@ project (Hyper f x) a = f (const a) x
 -- 'fold' . 'build' = 'id'
 -- @
 fold :: [a] -> (a -> b -> c) -> c -> Hyper b c
-fold [] _ n = base n
+fold [] _ n = pure n
 fold (x:xs) c n = push (c x) (fold xs c n)
 
 build :: (forall b c. (a -> b -> c) -> c -> Hyper b c) -> [a]
 build g = run (g (:) [])
-
--- ana :: CoStateArrow x (->) a b -> x -> Hyper a b
--- ana (CoStateArrow p) = Hyper p

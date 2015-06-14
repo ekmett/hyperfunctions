@@ -5,7 +5,6 @@ import Control.Arrow
 import Control.Category
 import Control.Monad.Fix
 import Data.Coerce
-
 import Data.Profunctor
 import Data.Profunctor.Unsafe
 import Prelude hiding ((.),id)
