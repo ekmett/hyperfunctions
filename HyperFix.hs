@@ -1,6 +1,7 @@
 {-# LANGUAGE DeriveFunctor, RankNTypes, ScopedTypeVariables #-}
 module Hyperfunctions where
 
+import Control.Applicative
 import Control.Arrow
 import Control.Category
 import Control.Monad.Fix
@@ -35,6 +36,8 @@ instance Category Hyper where
 
 instance Profunctor Hyper where
   dimap f g h = Hyper $ g . runHyper h . dimap g f
+  lmap f h = Hyper $ runHyper h . rmap f
+  rmap f h = Hyper $ f . runHyper h . lmap f
 
 instance Arrow Hyper where
   arr = fix . push
@@ -46,6 +49,16 @@ instance Arrow Hyper where
 instance Strong Hyper where
   first' = first
   second' = second
+
+instance Functor (Hyper a) where
+  fmap = rmap
+
+instance Applicative (Hyper a) where
+  pure = arr . const
+  p <* _ = p
+  _ *> p = p
+  (<*>) = curry $ ana $ \(i,j) fga ->
+    unroll i (\i' -> fga (i',j)) $ unroll j (\j' -> fga (i,j'))
 
 -- | 
 -- @
