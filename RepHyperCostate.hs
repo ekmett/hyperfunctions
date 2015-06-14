@@ -3,6 +3,7 @@
 {-# LANGUAGE RankNTypes #-}
 module RepresentableHyperfunctions where
 
+import Control.Applicative
 import Control.Arrow
 import Control.Category
 import Control.Monad.Fix
@@ -42,21 +43,18 @@ instance Arrow Hyper where
     f' fca = tabulate $ \i -> (fst (index fca i), index fb i) where fb = f (fmap snd fca)
 
   Hyper (f :: f a -> f b) x *** Hyper (g :: g c -> g d) y = Hyper h (x,y) where
-    h (Compose fgac) = tabulate $ \(i,j) -> (index (index gfb j) i, index (index fgd i) j)
-      where
-       fgd :: f (g d)
-       fgd = fmap (g . fmap snd) fgac
-       gfb :: g (f b)
-       gfb = tabulate $ \j -> f (fmap (\gac -> fst $ index gac j) fgac)
+    h (Compose fgac) = tabulate $ \(i,j) -> (index (index gfb j) i, index (index fgd i) j) where
+      fgd :: f (g d)
+      fgd = fmap (g . fmap snd) fgac
+      gfb :: g (f b)
+      gfb = tabulate $ \j -> f (fmap (\gac -> fst $ index gac j) fgac)
 
-{-
-  Hyper (f :: f a -> f b) x &&& Hyper (g :: g a -> g c) y = Hyper (Compose . h . getCompose) (x,y) where
-    h :: Compose f g a -> Compose f g (b, c)
-    h (Compose fga) = tabulate $ \(i,j) ->
-      ( index f i (fmap (`index` j) fga)
-      , index g j (index fga i)
-      )
--}
+  Hyper (f :: f a -> f b) x &&& Hyper (g :: g a -> g c) y = Hyper h (x,y) where
+    h (Compose fga) = tabulate $ \(i,j) -> (index (index gfb j) i, index (index fgc i) j) where
+      fgc :: f (g c)
+      fgc = fmap g fga
+      gfb :: g (f b)
+      gfb = tabulate $ \j -> f (fmap (\ga -> index ga j) fga)
 
 instance Profunctor Hyper where
   dimap f g (Hyper h x) = Hyper (fmap g . h . fmap f) x
@@ -68,12 +66,16 @@ instance Strong Hyper where
 instance Functor (Hyper a) where
   fmap f (Hyper h x) = Hyper (fmap f . h) x
 
--- |
--- @
--- 'base' = 'arr' . 'const'
--- @
-base :: b -> Hyper a b
-base b = Hyper (const (Identity b)) ()
+instance Applicative (Hyper a) where
+  pure b = Hyper (const (Identity b)) ()
+  p <* _ = p
+  _ *> p = p
+  Hyper (f :: f a -> f (b -> c)) x <*> Hyper (g :: g a -> g b) y = Hyper h (x,y) where
+    h (Compose fga) = tabulate $ \(i,j) -> index (index gfbc j) i $ index (index fgb i) j where
+      fgb :: f (g b)
+      fgb = fmap g fga
+      gfbc :: g (f (b -> c))
+      gfbc = tabulate $ \j -> f (fmap (\ga -> index ga j) fga)
 
 -- | Unroll a hyperfunction
 unroll :: Hyper a b -> (Hyper a b -> a) -> b
@@ -111,7 +113,7 @@ run (Hyper f x) = index (fix f) x
 -- |
 -- @
 -- 'project' . 'arr' ≡ 'id'
--- 'project' h a ≡ 'invoke' h ('base' a)
+-- 'project' h a ≡ 'invoke' h ('pure' a)
 -- @
 project :: Hyper a b -> a -> b
 project (Hyper f x) a = index (f (tabulate (const a))) x
@@ -123,7 +125,7 @@ project (Hyper f x) a = index (f (tabulate (const a))) x
 -- 'fold' . 'build' = 'id'
 -- @
 fold :: [a] -> (a -> b -> c) -> c -> Hyper b c
-fold [] _ n = base n
+fold [] _ n = pure n
 fold (x:xs) c n = push (c x) (fold xs c n)
 
 build :: (forall b c. (a -> b -> c) -> c -> Hyper b c) -> [a]
