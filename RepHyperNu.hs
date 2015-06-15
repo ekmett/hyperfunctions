@@ -29,6 +29,9 @@ data Hyper a b where
 ana :: (x -> (x -> a) -> b) -> x -> Hyper a b
 ana = Hyper
 
+cata :: (((y -> a) -> b) -> y) -> Hyper a b -> y
+cata phi = g where g x = phi $ \ f -> unroll x (f . g)
+
 instance Category Hyper where
   id = Hyper (Identity runIdentity) ()
   Hyper f x . Hyper g y = Hyper
@@ -68,6 +71,10 @@ instance Applicative (Hyper a) where
     h :: Compose f g (Compose f g a -> c)
     h = tabulate $ \(i,j) (Compose fga) ->
       index f i (fmap (`index` j) fga) (index g j (index fga i))
+
+instance Monad (Hyper a) where
+  return = pure
+  m >>= f = cata (\g -> roll $ \k -> unroll (f (g k)) k) m
 
 instance Profunctor Hyper where
   dimap f g (Hyper h x) = Hyper (fmap (\fa2b -> g . fa2b . fmap f) h) x
