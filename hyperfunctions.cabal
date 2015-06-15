@@ -36,7 +36,7 @@ library
   hs-source-dirs: src
 
   exposed-modules:
-    Control.Category.Hyper
-    Control.Category.Hyper.Rep
+    Control.Monad.Hyper
+    Control.Monad.Hyper.Rep
 
   ghc-options: -Wall

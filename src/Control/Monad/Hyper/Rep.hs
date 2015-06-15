@@ -1,7 +1,7 @@
 {-# LANGUAGE GADTs #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE RankNTypes #-}
-module Control.Category.Hyper.Rep where
+module Control.Monad.Hyper.Rep where
 
 import Control.Applicative
 import Control.Arrow
@@ -158,7 +158,7 @@ project (Hyper f x) a = index f x (tabulate (const a))
 -- 'fold' . 'build' = 'id'
 -- @
 fold :: [a] -> (a -> b -> c) -> c -> Hyper b c
-fold [] _ n = pure n
+fold []     _ n = pure n
 fold (x:xs) c n = push (c x) (fold xs c n)
 
 build :: (forall b c. (a -> b -> c) -> c -> Hyper b c) -> [a]

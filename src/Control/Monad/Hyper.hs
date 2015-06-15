@@ -2,7 +2,7 @@
 {-# LANGUAGE RankNTypes #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 
-module Control.Category.Hyper where
+module Control.Monad.Hyper where
 
 import Control.Applicative
 import Control.Arrow
