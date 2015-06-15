@@ -50,12 +50,20 @@ instance Arrow Hyper where
       fgd = g . (snd.) . fgac
       gfb j = f (\x -> fst $ fgac x j)
 
+instance ArrowLoop Hyper where
+  loop (Hyper f x) = Hyper f' x where
+    f' fa = fmap fst $ fix $ \r ->
+      f $ \i -> (index fa i, snd $ index r i)
+
 instance Profunctor Hyper where
   dimap f g (Hyper h x) = Hyper ((g.).h.(f.)) x
 
 instance Strong Hyper where
   first' = first
   second' = second
+
+instance Costrong Hyper where
+  unfirst = loop
 
 instance Functor (Hyper a) where
   fmap f (Hyper h x) = Hyper ((f.).h) x

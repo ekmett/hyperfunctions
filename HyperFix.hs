@@ -8,6 +8,7 @@ import Control.Monad.Fix
 import Data.Coerce
 import Data.Profunctor
 import Data.Profunctor.Unsafe
+import Data.Distributive
 import Prelude hiding ((.),id)
 
 -- |
@@ -53,9 +54,16 @@ instance Arrow Hyper where
   (***) = curry $ ana $ \(i,j) fgac -> (unroll i $ \i' -> fst $ fgac (i',j), unroll j $ \j' -> snd $ fgac (i,j'))
   (&&&) = curry $ ana $ \(i,j) fga  -> (unroll i $ \i' ->       fga  (i',j), unroll j $ \j' ->       fga  (i,j'))
 
+instance ArrowLoop Hyper where
+  loop = ana (distribute f') where
+    f' fa = fmap fst $ fix $ \r -> flip unroll $ \i -> (fa i, snd $ r i)
+
 instance Strong Hyper where
   first' = first
   second' = second
+
+instance Costrong Hyper where
+  unfirst = loop
 
 instance Functor (Hyper a) where
   fmap = rmap
