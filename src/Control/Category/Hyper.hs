@@ -15,16 +15,13 @@ import Prelude hiding ((.),id)
 -- |
 --
 -- @
--- 'runHyper' f g = 'run' (f . g)
+-- 'invoke' f g = 'run' (f . g)
 -- 'arr' f = 'push' f ('arr' f)
--- 'runHyper' id id = _|_
+-- 'invoke' 'id' 'id' = _|_
 -- @
 --
--- 'arr' is a faithful functor, so
---
--- @'arr' f ≡ 'arr' g@ implies @f ≡ g@
---
-newtype Hyper a b = Hyper { runHyper :: Hyper b a -> b }
+-- 'arr' is a faithful functor, so @'arr' f ≡ 'arr' g@ implies @f ≡ g@
+newtype Hyper a b = Hyper { invoke :: Hyper b a -> b }
 
 unroll :: Hyper a b -> (Hyper a b -> a) -> b
 unroll = coerce
@@ -33,7 +30,7 @@ roll :: ((Hyper a b -> a) -> b) -> Hyper a b
 roll = coerce
 
 ana :: (x -> (x -> a) -> b) -> x -> Hyper a b
-ana psi = f where f x = Hyper $ \z -> psi x (runHyper z . f)
+ana psi = f where f x = Hyper $ \z -> psi x (invoke z . f)
 
 -- | From "Generalizing the augment combinator" by Ghani, Uustali and Vene.
 --
@@ -45,12 +42,12 @@ cata phi = f where f h = phi $ \g -> unroll h (g . f)
 
 instance Category Hyper where
   id = arr id
-  f . g = Hyper $ \k -> runHyper f (g . k)
+  f . g = Hyper $ \k -> invoke f (g . k)
 
 instance Profunctor Hyper where
-  dimap f g h = Hyper $ g . runHyper h . dimap g f
-  lmap f h = Hyper $ runHyper h . rmap f
-  rmap f h = Hyper $ f . runHyper h . lmap f
+  dimap f g h = Hyper $ g . invoke h . dimap g f
+  lmap f h = Hyper $ invoke h . rmap f
+  rmap f h = Hyper $ f . invoke h . lmap f
 
 instance Arrow Hyper where
   arr = fix . push
@@ -87,10 +84,10 @@ instance Monad (Hyper a) where
 -- |
 -- @
 -- push f p . push g q = push (f . g) (p . q)
--- runHyper (push f p) q = f (runHyper q p)
+-- invoke (push f p) q = f (invoke q p)
 -- @
 push :: (a -> b) -> Hyper a b -> Hyper a b
-push f q = Hyper $ \k -> f (runHyper k q)
+push f q = Hyper $ \k -> f (invoke k q)
 
 
 -- |
@@ -98,26 +95,29 @@ push f q = Hyper $ \k -> f (runHyper k q)
 -- @
 -- 'run' ('arr' f) = 'fix' f
 -- 'run' ('push' f q) = f ('run' q)
--- 'run' ('push' f p . q) = f ('run' (q . p)) = f ('runHyper' q p)
+-- 'run' ('push' f p . q) = f ('run' (q . p)) = f ('invoke' q p)
 -- @
 run :: Hyper a a -> a
-run f = runHyper f id
+run f = invoke f id
 
 -- |
+-- @
+-- 'project' ('push' f q) = f
+-- @
+--
 -- 'project' is a left inverse for 'arr':
 --
 -- @
 -- 'project' '.' 'arr' = 'id'
--- 'project' ('push' f q) = f
 -- @
 project :: Hyper a b -> a -> b
-project q x = runHyper q (pure x)
+project q x = invoke q (pure x)
 
 fold :: [a] -> (a -> b -> c) -> c -> Hyper b c
 fold xs c n = foldr (push . c) (pure n) xs
 
 -- |
--- <http://arxiv.org/pdf/1309.5135.pdf Under nice conditions>
+-- <http://arxiv.org/pdf/1309.5135.pdf Under nice conditions:>
 --
 -- @
 -- 'fold' . 'build' = 'id'
