@@ -15,8 +15,8 @@ import Data.Profunctor
 import Data.Profunctor.Unsafe
 import Prelude hiding ((.),id)
 
--- | Hyperfunctions as an explicit "nu" form, but using a representable functor
--- to describe the "state space" of the hyperfunction. This permits memoization
+-- | Hyperfunctions as an explicit nu form, but using a representable functor
+-- to describe the state space of the hyperfunction. This permits memoization
 -- but doesn't require it.
 --
 -- 'arr' is a faithful functor, so
@@ -73,12 +73,12 @@ instance ArrowLoop Hyper where
     f' fa = fmap fst $ fix $ \(r :: f (b,d)) ->
       distribute f $ tabulate $ \i -> (index fa i, snd $ index r i)
 
--- instance ArrowApply Hyper where
-  -- first (arr (\x -> arr (\y -> (x,y)))) >>> app = id
-  -- first (arr (g >>>)) >>> app = second g >>> app
-  -- first (arr (>>> h)) >>> app = app >>> h
-  -- app :: Hyper (Hyper b c, b) c
---  app = arr (uncurry project)
+-- instance ArrowApply Hyper where app = ...
+-- instance ArrowChoice Hyper where left = leftApp
+-- instance Choice Hyper where left = leftApp
+
+instance Functor (Hyper a) where
+  fmap f (Hyper h x) = Hyper (fmap (f .) h) x
 
 instance Applicative (Hyper a) where
   pure b = Hyper (Identity (const b)) ()
@@ -102,9 +102,6 @@ instance Strong Hyper where
 
 instance Costrong Hyper where
   unfirst = loop
-
-instance Functor (Hyper a) where
-  fmap f (Hyper h x) = Hyper (fmap (f .) h) x
 
 -- |
 -- @
