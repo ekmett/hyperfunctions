@@ -83,8 +83,8 @@ instance Monad (Hyper a) where
 
 -- |
 -- @
--- push f p . push g q = push (f . g) (p . q)
--- invoke (push f p) q = f (invoke q p)
+-- 'push' f p . 'push' g q = 'push' (f . g) (p . q)
+-- 'invoke' ('push' f p) q = f ('invoke' q p)
 -- @
 push :: (a -> b) -> Hyper a b -> Hyper a b
 push f q = Hyper $ \k -> f (invoke k q)
