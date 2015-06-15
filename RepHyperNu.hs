@@ -6,6 +6,8 @@ module RepHyperNu where
 import Control.Applicative
 import Control.Arrow
 import Control.Category
+import Control.Monad.Fix
+import Data.Distributive
 import Data.Functor.Compose
 import Data.Functor.Identity
 import Data.Functor.Product
@@ -63,6 +65,18 @@ instance Arrow Hyper where
       , index g j (index fga i)
       )
 
+instance ArrowLoop Hyper where
+  loop (Hyper f x) = Hyper (distribute f') x where
+    f' fa = fmap fst $ fix $ \(r :: f (b,d)) ->
+      distribute f $ tabulate $ \i -> (index fa i, snd $ index r i)
+
+-- instance ArrowApply Hyper where
+  -- first (arr (\x -> arr (\y -> (x,y)))) >>> app = id
+  -- first (arr (g >>>)) >>> app = second g >>> app
+  -- first (arr (>>> h)) >>> app = app >>> h
+  -- app :: Hyper (Hyper b c, b) c
+--  app = arr (uncurry project)
+
 instance Applicative (Hyper a) where
   pure b = Hyper (Identity (const b)) ()
   p <* _ = p
@@ -82,6 +96,9 @@ instance Profunctor Hyper where
 instance Strong Hyper where
   first' = first
   second' = second
+
+instance Costrong Hyper where
+  unfirst = loop
 
 instance Functor (Hyper a) where
   fmap f (Hyper h x) = Hyper (fmap (f .) h) x
@@ -122,6 +139,7 @@ uninvoke = Hyper (. roll)
 -- @
 run :: Hyper a a -> a
 run (Hyper f x) = index r x where r = fmap (\phi -> phi r) f
+
 
 -- |
 -- @

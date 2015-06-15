@@ -59,12 +59,20 @@ instance Arrow Hyper where
       gfb :: g (f b)
       gfb = tabulate $ \j -> f (fmap (\ga -> index ga j) fga)
 
+instance ArrowLoop Hyper where
+  loop (Hyper f x) = Hyper f' x where
+    f' fa = fmap fst $ fix $ \(r :: f (b,d)) ->
+      f $ tabulate $ \i -> (index fa i, snd $ index r i)
+
 instance Profunctor Hyper where
   dimap f g (Hyper h x) = Hyper (fmap g . h . fmap f) x
 
 instance Strong Hyper where
   first' = first
   second' = second
+
+instance Costrong Hyper where
+  unfirst = loop
 
 instance Functor (Hyper a) where
   fmap f (Hyper h x) = Hyper (fmap f . h) x
