@@ -1,5 +1,5 @@
 {-# LANGUAGE DeriveFunctor, RankNTypes, ScopedTypeVariables #-}
-module Hyperfunctions where
+module HyperFix where
 
 import Control.Applicative
 import Control.Arrow

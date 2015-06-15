@@ -1,7 +1,7 @@
 {-# LANGUAGE GADTs #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE RankNTypes #-}
-module RepresentableHyperfunctions where
+module RepHyperCostate where
 
 import Control.Applicative
 import Control.Arrow
