@@ -1,5 +1,8 @@
-{-# LANGUAGE DeriveFunctor, RankNTypes, ScopedTypeVariables #-}
-module HyperFix where
+{-# LANGUAGE DeriveFunctor #-}
+{-# LANGUAGE RankNTypes #-}
+{-# LANGUAGE ScopedTypeVariables #-}
+
+module Control.Arrow.Hyper where
 
 import Control.Applicative
 import Control.Arrow
@@ -7,8 +10,6 @@ import Control.Category
 import Control.Monad.Fix
 import Data.Coerce
 import Data.Profunctor
-import Data.Profunctor.Unsafe
-import Data.Distributive
 import Prelude hiding ((.),id)
 
 -- |
@@ -55,7 +56,7 @@ instance Arrow Hyper where
   (&&&) = curry $ ana $ \(i,j) fga  -> (unroll i $ \i' ->       fga  (i',j), unroll j $ \j' ->       fga  (i,j'))
 
 instance ArrowLoop Hyper where
-  loop = ana (distribute f') where
+  loop = ana (flip f') where
     f' fa = fmap fst $ fix $ \r -> flip unroll $ \i -> (fa i, snd $ r i)
 
 instance Strong Hyper where

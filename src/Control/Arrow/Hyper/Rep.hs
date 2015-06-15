@@ -1,7 +1,7 @@
 {-# LANGUAGE GADTs #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE RankNTypes #-}
-module RepHyperNu where
+module Control.Arrow.Hyper.Rep where
 
 import Control.Applicative
 import Control.Arrow
@@ -10,7 +10,6 @@ import Control.Monad.Fix
 import Data.Distributive
 import Data.Functor.Compose
 import Data.Functor.Identity
-import Data.Functor.Product
 import Data.Functor.Rep
 import Data.Profunctor
 import Data.Profunctor.Unsafe
