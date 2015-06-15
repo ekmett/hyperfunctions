@@ -12,7 +12,6 @@ import Data.Distributive
 import Data.Functor.Compose
 import Data.Functor.Identity
 import Data.Functor.Rep
-import Data.Monoid
 import Data.Profunctor
 import Data.Profunctor.Unsafe
 import Prelude hiding ((.),id)
