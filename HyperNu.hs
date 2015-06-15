@@ -27,6 +27,9 @@ import Prelude hiding ((.),id)
 data Hyper a b where
   Hyper :: ((x -> a) -> x -> b) -> x -> Hyper a b
 
+cata :: (((y -> a) -> b) -> y) -> Hyper a b -> y
+cata phi = g where g x = phi $ \ f -> unroll x (f . g) where
+
 instance Category Hyper where
   id = Hyper id ()
   Hyper f x . Hyper g y = Hyper (uncurry . collect f . collect g . curry) (x,y)
@@ -58,12 +61,16 @@ instance Functor (Hyper a) where
   fmap f (Hyper h x) = Hyper ((f.).h) x
 
 instance Applicative (Hyper a) where
-  pure = arr . const
+  pure a = Hyper (\_ _ -> a) ()
   p <* _ = p
   _ *> p = p
   Hyper f x <*> Hyper g y = Hyper h (x,y) where
     h fga (i,j) = f (\i' -> fga (i',j)) i
                 $ g (\j' -> fga (i,j')) j
+
+instance Monad (Hyper a) where
+  return = pure
+  m >>= f = cata (\g -> roll $ \k -> unroll (f (g k)) k) m
 
 -- | Unroll a hyperfunction
 unroll :: Hyper a b -> (Hyper a b -> a) -> b
