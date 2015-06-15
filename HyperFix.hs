@@ -24,11 +24,14 @@ import Prelude hiding ((.),id)
 --
 newtype Hyper a b = Hyper { runHyper :: Hyper b a -> b }
 
-ana :: (x -> (x -> a) -> b) -> x -> Hyper a b
-ana g = f where f x = Hyper $ \z -> g x (runHyper z . f)
-
 unroll :: Hyper a b -> (Hyper a b -> a) -> b
 unroll = coerce
+
+ana :: (x -> (x -> a) -> b) -> x -> Hyper a b
+ana psi = f where f x = Hyper $ \z -> psi x (runHyper z . f)
+
+cata :: (((x -> a) -> b) -> x) -> Hyper a b -> x
+cata phi = f where f h = phi $ \g -> unroll h (g . f)
 
 instance Category Hyper where
   id = arr id
