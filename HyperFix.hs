@@ -82,6 +82,7 @@ instance Monad (Hyper a) where
 -- | 
 -- @
 -- push f p . push g q = push (f . g) (p . q)
+-- runHyper (push f p) q = f (runHyper q p)
 -- @
 push :: (a -> b) -> Hyper a b -> Hyper a b
 push f q = Hyper $ \k -> f (runHyper k q)
