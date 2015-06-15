@@ -64,7 +64,7 @@ instance Arrow Hyper where
       )
 
 instance Applicative (Hyper a) where
-  pure = base
+  pure b = Hyper (Identity (const b)) ()
   p <* _ = p
   _ *> p = p
   Hyper (f :: f (f a -> b -> c)) x <*> Hyper (g :: g (g a -> b)) y = Hyper h (x,y) where
@@ -85,13 +85,6 @@ instance Strong Hyper where
 
 instance Functor (Hyper a) where
   fmap f (Hyper h x) = Hyper (fmap (f .) h) x
-
--- |
--- @
--- 'base' = 'arr' . 'const'
--- @
-base :: b -> Hyper a b
-base b = Hyper (Identity (const b)) ()
 
 -- |
 -- @
@@ -133,7 +126,7 @@ run (Hyper f x) = index r x where r = fmap (\phi -> phi r) f
 -- |
 -- @
 -- 'project' . 'arr' ≡ 'id'
--- 'project' h a ≡ 'invoke' h ('base' a)
+-- 'project' h a ≡ 'invoke' h ('pure' a)
 -- @
 project :: Hyper a b -> a -> b
 project (Hyper f x) a = index f x (tabulate (const a))
@@ -145,7 +138,7 @@ project (Hyper f x) a = index f x (tabulate (const a))
 -- 'fold' . 'build' = 'id'
 -- @
 fold :: [a] -> (a -> b -> c) -> c -> Hyper b c
-fold [] _ n = base n
+fold [] _ n = pure n
 fold (x:xs) c n = push (c x) (fold xs c n)
 
 build :: (forall b c. (a -> b -> c) -> c -> Hyper b c) -> [a]

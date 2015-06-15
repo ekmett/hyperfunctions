@@ -79,14 +79,6 @@ push :: (a -> b) -> Hyper a b -> Hyper a b
 push f q = Hyper $ \k -> f (runHyper k q)
   
 
--- |
---
--- @
--- base = arr . const
--- @
-base :: a -> Hyper b a
-base p = Hyper $ \_ -> p
-
 -- | 
 --
 -- @
@@ -103,10 +95,10 @@ run f = runHyper f id
 -- 'project' '.' 'arr' = 'id'
 -- @
 project :: Hyper a b -> a -> b
-project q x = runHyper q (base x)
+project q x = runHyper q (pure x)
 
 fold :: [a] -> (a -> b -> c) -> c -> Hyper b c
-fold xs c n = foldr (push . c) (base n) xs
+fold xs c n = foldr (push . c) (pure n) xs
 
 -- | 
 -- <http://arxiv.org/pdf/1309.5135.pdf Under nice conditions>
