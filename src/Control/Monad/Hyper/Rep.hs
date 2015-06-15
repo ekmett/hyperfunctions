@@ -73,10 +73,6 @@ instance ArrowLoop Hyper where
     f' fa = fmap fst $ fix $ \(r :: f (b,d)) ->
       distribute f $ tabulate $ \i -> (index fa i, snd $ index r i)
 
--- instance ArrowApply Hyper where app = ...
--- instance ArrowChoice Hyper where left = leftApp
--- instance Choice Hyper where left = leftApp
-
 instance Functor (Hyper a) where
   fmap f (Hyper h x) = Hyper (fmap (f .) h) x
 
