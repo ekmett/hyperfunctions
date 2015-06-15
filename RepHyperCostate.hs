@@ -120,6 +120,7 @@ push f q = uninvoke $ \k -> f (invoke k q)
 -- @
 -- 'run' f ≡ 'invoke' f 'id'
 -- 'run' ('arr' f) = 'fix' f
+-- 'run' ('push' f q) = f ('run' q)
 -- 'run' ('push' f p . q) = f ('run' (q . p)) = f ('invoke' q p)
 -- @
 run :: Hyper a a -> a

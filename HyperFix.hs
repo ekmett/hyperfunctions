@@ -90,8 +90,9 @@ push f q = Hyper $ \k -> f (runHyper k q)
 -- | 
 --
 -- @
--- run ('arr' f) = 'fix' f
--- run ('push' f p . q) = f ('run' (q . p)) = f ('runHyper' q p)
+-- 'run' ('arr' f) = 'fix' f
+-- 'run' ('push' f q) = f ('run' q)
+-- 'run' ('push' f p . q) = f ('run' (q . p)) = f ('runHyper' q p)
 -- @
 run :: Hyper a a -> a
 run f = runHyper f id
