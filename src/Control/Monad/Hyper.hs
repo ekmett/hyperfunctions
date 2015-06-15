@@ -15,9 +15,9 @@ import Prelude hiding ((.),id)
 -- |
 --
 -- @
--- 'invoke' f g = 'run' (f . g)
--- 'arr' f = 'push' f ('arr' f)
--- 'invoke' 'id' 'id' = _|_
+-- 'invoke' f g ≡ 'run' (f . g)
+-- 'arr' f ≡ 'push' f ('arr' f)
+-- 'invoke' 'id' 'id' ≡ _|_
 -- @
 --
 -- 'arr' is a faithful functor, so @'arr' f ≡ 'arr' g@ implies @f ≡ g@
@@ -35,7 +35,7 @@ ana psi = f where f x = Hyper $ \z -> psi x (invoke z . f)
 -- | From "Generalizing the augment combinator" by Ghani, Uustali and Vene.
 --
 -- @
--- 'cata' phi ('push' f h) = phi $ \g -> f $ g ('cata' phi h)
+-- 'cata' phi ('push' f h) ≡ phi $ \g -> f $ g ('cata' phi h)
 -- @
 cata :: (((x -> a) -> b) -> x) -> Hyper a b -> x
 cata phi = f where f h = phi $ \g -> unroll h (g . f)
@@ -83,8 +83,8 @@ instance Monad (Hyper a) where
 
 -- |
 -- @
--- 'push' f p . 'push' g q = 'push' (f . g) (p . q)
--- 'invoke' ('push' f p) q = f ('invoke' q p)
+-- 'push' f p . 'push' g q ≡ 'push' (f . g) (p . q)
+-- 'invoke' ('push' f p) q ≡ f ('invoke' q p)
 -- @
 push :: (a -> b) -> Hyper a b -> Hyper a b
 push f q = Hyper $ \k -> f (invoke k q)
@@ -93,22 +93,22 @@ push f q = Hyper $ \k -> f (invoke k q)
 -- |
 --
 -- @
--- 'run' ('arr' f) = 'fix' f
--- 'run' ('push' f q) = f ('run' q)
--- 'run' ('push' f p . q) = f ('run' (q . p)) = f ('invoke' q p)
+-- 'run' ('arr' f) ≡ 'fix' f
+-- 'run' ('push' f q) ≡ f ('run' q)
+-- 'run' ('push' f p . q) ≡ f ('run' (q . p)) = f ('invoke' q p)
 -- @
 run :: Hyper a a -> a
 run f = invoke f id
 
 -- |
 -- @
--- 'project' ('push' f q) = f
+-- 'project' ('push' f q) ≡ f
 -- @
 --
 -- 'project' is a left inverse for 'arr':
 --
 -- @
--- 'project' '.' 'arr' = 'id'
+-- 'project' '.' 'arr' ≡ 'id'
 -- @
 project :: Hyper a b -> a -> b
 project q x = invoke q (pure x)
@@ -120,7 +120,7 @@ fold xs c n = foldr (push . c) (pure n) xs
 -- <http://arxiv.org/pdf/1309.5135.pdf Under nice conditions:>
 --
 -- @
--- 'fold' . 'build' = 'id'
+-- 'fold' . 'build' ≡ 'id'
 -- @
 build :: (forall b c. (a -> b -> c) -> c -> Hyper b c) -> [a]
 build g = run (g (:) [])

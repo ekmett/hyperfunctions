@@ -32,7 +32,7 @@ ana = Hyper
 
 -- |
 -- @
--- 'cata' phi ('push' f h) = phi $ \g -> f $ g ('cata' phi h)
+-- 'cata' phi ('push' f h) ≡ phi $ \g -> f $ g ('cata' phi h)
 -- @
 cata :: (((y -> a) -> b) -> y) -> Hyper a b -> y
 cata phi = g where g x = phi $ \ f -> unroll x (f . g)
@@ -134,9 +134,9 @@ uninvoke = Hyper (. roll)
 -- |
 -- @
 -- 'run' f ≡ 'invoke' f 'id'
--- 'run' ('arr' f) = 'fix' f
--- 'run' ('push' f q) = f ('run' q)
--- 'run' ('push' f p . q) = f ('run' (q . p)) = f ('invoke' q p)
+-- 'run' ('arr' f) ≡ 'fix' f
+-- 'run' ('push' f q) ≡ f ('run' q)
+-- 'run' ('push' f p . q) ≡ f ('run' (q . p)) = f ('invoke' q p)
 -- @
 run :: Hyper a a -> a
 run (Hyper f x) = index r x where r = fmap (\phi -> phi r) f
@@ -146,7 +146,7 @@ run (Hyper f x) = index r x where r = fmap (\phi -> phi r) f
 -- @
 -- 'project' . 'arr' ≡ 'id'
 -- 'project' h a ≡ 'invoke' h ('pure' a)
--- 'project' ('push' f q) = f
+-- 'project' ('push' f q) ≡ f
 -- @
 project :: Hyper a b -> a -> b
 project (Hyper f x) a = index f x (tabulate (const a))
@@ -155,7 +155,7 @@ project (Hyper f x) a = index f x (tabulate (const a))
 -- <http://arxiv.org/pdf/1309.5135.pdf Under "nice" conditions>
 --
 -- @
--- 'fold' . 'build' = 'id'
+-- 'fold' . 'build' ≡ 'id'
 -- @
 fold :: [a] -> (a -> b -> c) -> c -> Hyper b c
 fold []     _ n = pure n
