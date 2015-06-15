@@ -35,7 +35,7 @@ ana psi = f where f x = Hyper $ \z -> psi x (invoke z . f)
 -- | From "Generalizing the augment combinator" by Ghani, Uustali and Vene.
 --
 -- @
--- 'cata' phi ('push' f h) ≡ phi $ \g -> f $ g ('cata' phi h)
+-- 'cata' phi ('push' f h) ≡ phi $ \\g -> f $ g ('cata' phi h)
 -- @
 cata :: (((x -> a) -> b) -> x) -> Hyper a b -> x
 cata phi = f where f h = phi $ \g -> unroll h (g . f)
