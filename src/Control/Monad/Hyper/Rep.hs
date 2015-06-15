@@ -7,10 +7,12 @@ import Control.Applicative
 import Control.Arrow
 import Control.Category
 import Control.Monad.Fix
+import Control.Monad.Zip
 import Data.Distributive
 import Data.Functor.Compose
 import Data.Functor.Identity
 import Data.Functor.Rep
+import Data.Monoid
 import Data.Profunctor
 import Data.Profunctor.Unsafe
 import Prelude hiding ((.),id)
@@ -89,6 +91,10 @@ instance Monad (Hyper a) where
   return = pure
   m >>= f = cata (\g -> roll $ \k -> unroll (f (g k)) k) m
 
+instance MonadZip (Hyper a) where
+  munzip h = (fmap fst h, fmap snd h)
+  mzipWith = liftA2
+
 instance Profunctor Hyper where
   dimap f g (Hyper h x) = Hyper (fmap (\fa2b -> g . fa2b . fmap f) h) x
 
@@ -114,10 +120,10 @@ unroll (Hyper (f :: f (f a -> b)) x) k = index f x (tabulate (k . Hyper f))
 
 -- | Re-roll a hyperfunction using Lambek's lemma.
 roll :: ((Hyper a b -> a) -> b) -> Hyper a b
-roll = Hyper (mapH unroll)
+roll = Hyper (mapH unroll) where
+  -- mapH :: (x -> y) -> ((x -> a) -> b) -> (y -> a) -> b
+  mapH xy xa2b ya = xa2b (ya . xy)
 
-mapH :: (x -> y) -> ((x -> a) -> b) -> (y -> a) -> b
-mapH xy xa2b ya = xa2b (ya . xy)
 
 invoke :: Hyper a b -> Hyper b a -> b
 invoke (Hyper (f :: f (f a -> b)) x) (Hyper (g :: g (g b -> a)) y) = index (index r x) y where

@@ -8,9 +8,11 @@ import Control.Applicative
 import Control.Arrow
 import Control.Category
 import Control.Monad.Fix
+import Control.Monad.Zip
 import Data.Coerce
 import Data.Profunctor
 import Prelude hiding ((.),id)
+
 
 -- |
 --
@@ -80,6 +82,10 @@ instance Applicative (Hyper a) where
 instance Monad (Hyper a) where
   return = pure
   m >>= f = cata (\g -> roll $ \k -> unroll (f (g k)) k) m
+
+instance MonadZip (Hyper a) where
+  munzip h = (fmap fst h, fmap snd h)
+  mzipWith = liftA2
 
 -- |
 -- @
