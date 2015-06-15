@@ -30,6 +30,10 @@ data Hyper a b where
 ana :: (x -> (x -> a) -> b) -> x -> Hyper a b
 ana = Hyper
 
+-- |
+-- @
+-- 'cata' phi ('push' f h) = phi $ \g -> f $ g ('cata' phi h)
+-- @
 cata :: (((y -> a) -> b) -> y) -> Hyper a b -> y
 cata phi = g where g x = phi $ \ f -> unroll x (f . g)
 

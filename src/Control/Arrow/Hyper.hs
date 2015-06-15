@@ -22,7 +22,7 @@ import Prelude hiding ((.),id)
 --
 -- 'arr' is a faithful functor, so
 --
--- @'arr' f ≡ 'arr' g@ implies @f ≡ g@ 
+-- @'arr' f ≡ 'arr' g@ implies @f ≡ g@
 --
 newtype Hyper a b = Hyper { runHyper :: Hyper b a -> b }
 
@@ -36,6 +36,10 @@ ana :: (x -> (x -> a) -> b) -> x -> Hyper a b
 ana psi = f where f x = Hyper $ \z -> psi x (runHyper z . f)
 
 -- | From "Generalizing the augment combinator" by Ghani, Uustali and Vene.
+--
+-- @
+-- 'cata' phi ('push' f h) = phi $ \g -> f $ g ('cata' phi h)
+-- @
 cata :: (((x -> a) -> b) -> x) -> Hyper a b -> x
 cata phi = f where f h = phi $ \g -> unroll h (g . f)
 
@@ -80,16 +84,16 @@ instance Monad (Hyper a) where
   return = pure
   m >>= f = cata (\g -> roll $ \k -> unroll (f (g k)) k) m
 
--- | 
+-- |
 -- @
 -- push f p . push g q = push (f . g) (p . q)
 -- runHyper (push f p) q = f (runHyper q p)
 -- @
 push :: (a -> b) -> Hyper a b -> Hyper a b
 push f q = Hyper $ \k -> f (runHyper k q)
-  
 
--- | 
+
+-- |
 --
 -- @
 -- 'run' ('arr' f) = 'fix' f
@@ -112,7 +116,7 @@ project q x = runHyper q (pure x)
 fold :: [a] -> (a -> b -> c) -> c -> Hyper b c
 fold xs c n = foldr (push . c) (pure n) xs
 
--- | 
+-- |
 -- <http://arxiv.org/pdf/1309.5135.pdf Under nice conditions>
 --
 -- @
