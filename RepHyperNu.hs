@@ -69,14 +69,6 @@ instance Applicative (Hyper a) where
     h = tabulate $ \(i,j) (Compose fga) ->
       index f i (fmap (`index` j) fga) (index g j (index fga i))
 
-{-
-instance Monad (Hyper a) where
-  return = base
-  Hyper (f :: f (f a -> b)) x >>= (k :: b -> Hyper a c) = Hyper f' x where
-    f' :: f (f a -> c)
-    f' = undefined
--}
-
 instance Profunctor Hyper where
   dimap f g (Hyper h x) = Hyper (fmap (\fa2b -> g . fa2b . fmap f) h) x
 

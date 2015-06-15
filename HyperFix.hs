@@ -27,9 +27,13 @@ newtype Hyper a b = Hyper { runHyper :: Hyper b a -> b }
 unroll :: Hyper a b -> (Hyper a b -> a) -> b
 unroll = coerce
 
+roll :: ((Hyper a b -> a) -> b) -> Hyper a b
+roll = coerce
+
 ana :: (x -> (x -> a) -> b) -> x -> Hyper a b
 ana psi = f where f x = Hyper $ \z -> psi x (runHyper z . f)
 
+-- | From "Generalizing the augment combinator" by Ghani, Uustali and Vene.
 cata :: (((x -> a) -> b) -> x) -> Hyper a b -> x
 cata phi = f where f h = phi $ \g -> unroll h (g . f)
 
@@ -57,11 +61,15 @@ instance Functor (Hyper a) where
   fmap = rmap
 
 instance Applicative (Hyper a) where
-  pure = arr . const
+  pure a = Hyper $ \_ -> a
   p <* _ = p
   _ *> p = p
   (<*>) = curry $ ana $ \(i,j) fga ->
     unroll i (\i' -> fga (i',j)) $ unroll j (\j' -> fga (i,j'))
+
+instance Monad (Hyper a) where
+  return = pure
+  m >>= f = cata (\g -> roll $ \k -> unroll (f (g k)) k) m
 
 -- | 
 -- @
