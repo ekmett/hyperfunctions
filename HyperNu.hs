@@ -28,7 +28,7 @@ data Hyper a b where
   Hyper :: ((x -> a) -> x -> b) -> x -> Hyper a b
 
 cata :: (((y -> a) -> b) -> y) -> Hyper a b -> y
-cata phi = g where g x = phi $ \ f -> unroll x (f . g) where
+cata phi = g where g x = phi $ \ f -> unroll x (f . g)
 
 instance Category Hyper where
   id = Hyper id ()
