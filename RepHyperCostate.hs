@@ -29,6 +29,9 @@ import Prelude hiding ((.),id)
 data Hyper a b where
   Hyper :: Representable g => (g a -> g b) -> Rep g -> Hyper a b
 
+cata :: (((y -> a) -> b) -> y) -> Hyper a b -> y
+cata phi = g where g x = phi $ \ f -> unroll x (f . g)
+
 instance Category Hyper where
   id = Hyper (id :: forall a. Identity a -> Identity a) ()
   Hyper f x . Hyper g y = Hyper (Compose . collect f . collect g . getCompose) (x,y)
@@ -76,6 +79,10 @@ instance Applicative (Hyper a) where
       fgb = fmap g fga
       gfbc :: g (f (b -> c))
       gfbc = tabulate $ \j -> f (fmap (\ga -> index ga j) fga)
+
+instance Monad (Hyper a) where
+  return = pure
+  m >>= f = cata (\g -> roll $ \k -> unroll (f (g k)) k) m
 
 -- | Unroll a hyperfunction
 unroll :: Hyper a b -> (Hyper a b -> a) -> b
