@@ -1,7 +1,7 @@
 {-# LANGUAGE GADTs #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE RankNTypes #-}
-module Control.Arrow.Hyper.Rep where
+module Control.Category.Hyper.Rep where
 
 import Control.Applicative
 import Control.Arrow
