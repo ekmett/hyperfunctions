@@ -101,6 +101,7 @@ run f = runHyper f id
 --
 -- @
 -- 'project' '.' 'arr' = 'id'
+-- 'project' ('push' f q) = f
 -- @
 project :: Hyper a b -> a -> b
 project q x = runHyper q (pure x)

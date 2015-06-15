@@ -129,6 +129,7 @@ run (Hyper f x) = index (fix f) x
 -- @
 -- 'project' . 'arr' ≡ 'id'
 -- 'project' h a ≡ 'invoke' h ('pure' a)
+-- 'project' ('push' f q) = f
 -- @
 project :: Hyper a b -> a -> b
 project (Hyper f x) a = index (f (tabulate (const a))) x
