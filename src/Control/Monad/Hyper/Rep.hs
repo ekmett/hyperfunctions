@@ -1,6 +1,34 @@
 {-# LANGUAGE GADTs #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE RankNTypes #-}
+{-# LANGUAGE Trustworthy #-}
+
+-----------------------------------------------------------------------------
+-- |
+-- Copyright   :  (C) 2015 Edward Kmett
+-- License     :  BSD-style (see the file LICENSE)
+-- Maintainer  :  Edward Kmett <ekmett@gmail.com>
+-- Stability   :  experimental
+-- Portability :  non-portable
+--
+-- Hyperfunctions as an explicit nu form, but using a representable functor
+-- to describe the state space of the hyperfunction. This permits memoization
+-- but doesn't require it.
+--
+-- If we start with a 'function with state' @(x -> a) -> x -> b@ we can view
+-- it as either @(x -> a, x) -> b@ wich is a @Store x@ Cokleisli morphism or
+-- as @φ :: x -> (x -> a) -> b@ which given @H a b x = (x -> a) -> b@ is a
+-- @(H a b)@-coalgebra: @(x, φ)@ . Given that we can think of anamorphisms of
+-- this 'function with state' as giving us a fixed point for @H a b@ and the
+-- morphism to the final coalgebra @(Hyper a b, ana φ) is unique (by definition).
+--
+-- A representable functor @f@ is isomorphic to @(->) ('Rep' f)@. @((->) x)@
+-- is an obvious selection for such a representable functor, so if we switch
+-- out the functions from 'x' in the above, for a representable functor with
+-- @x@ as its representation we get opportunities for memoization on the
+-- internal 'state space' of our hyperfunctions.
+--
+-----------------------------------------------------------------------------
 module Control.Monad.Hyper.Rep where
 
 import Control.Applicative
@@ -16,14 +44,11 @@ import Data.Profunctor
 import Data.Profunctor.Unsafe
 import Prelude hiding ((.),id)
 
--- | Hyperfunctions as an explicit nu form, but using a representable functor
--- to describe the state space of the hyperfunction. This permits memoization
--- but doesn't require it.
+-- | Represented Hyperfunctions
 --
 -- 'arr' is a faithful functor, so
 --
 -- @'arr' f ≡ 'arr' g@ implies @f ≡ g@
---
 
 data Hyper a b where
   Hyper :: Representable g => g (g a -> b) -> Rep g -> Hyper a b
@@ -36,7 +61,11 @@ ana = Hyper
 -- 'cata' phi ('push' f h) ≡ phi $ \\g -> f $ g ('cata' phi h)
 -- @
 cata :: (((y -> a) -> b) -> y) -> Hyper a b -> y
-cata phi = g where g x = phi $ \ f -> unroll x (f . g)
+cata = cata'
+
+-- | Memoizing catamorphism
+cata' :: Representable f => ((f a -> b) -> Rep f) -> Hyper a b -> Rep f
+cata' f (Hyper g x) = index (fix (\h -> fmap (\k -> f (\fx -> k $ fmap (index fx) h)) g)) x
 
 instance Category Hyper where
   id = Hyper (Identity runIdentity) ()
@@ -140,7 +169,7 @@ uninvoke = Hyper (. roll)
 -- 'run' ('push' f p . q) ≡ f ('run' (q . p)) = f ('invoke' q p)
 -- @
 run :: Hyper a a -> a
-run (Hyper f x) = index r x where r = fmap (\phi -> phi r) f
+run (Hyper f x) = index r x where r = fmap ($ r) f
 
 
 -- |
