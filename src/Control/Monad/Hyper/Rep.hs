@@ -63,9 +63,10 @@ ana = Hyper
 cata :: (((y -> a) -> b) -> y) -> Hyper a b -> y
 cata = cata'
 
--- | Memoizing catamorphism
+-- | Memoizing catamorphism.
 cata' :: Representable f => ((f a -> b) -> Rep f) -> Hyper a b -> Rep f
-cata' f (Hyper g x) = index (fix (\h -> fmap (\k -> f (\fx -> k $ fmap (index fx) h)) g)) x
+cata' f (Hyper g x) = index h x where
+  h = fmap (\k -> f (\fx -> k $ fmap (index fx) h)) g
 
 instance Category Hyper where
   id = Hyper (Identity runIdentity) ()
