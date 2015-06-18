@@ -20,6 +20,7 @@ extra-source-files:
   .gitignore
   README.markdown
   CHANGELOG.markdown
+  examples/Cantor.hs
 
 source-repository head
   type: git
