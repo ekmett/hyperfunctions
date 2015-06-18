@@ -50,17 +50,6 @@ prepend _ a n = a (n-1)
 shift :: Bool -> Functional -> Functional
 shift b f = f . prepend b
 
-fn :: UCF -> Functional
-fn (Const b) = const b
-fn (NonConst x0) = fn' x0 where
-  fn' f a = compute 0 f where
-    compute k (Head b)  = a k == b
-    compute k (And b x) = (a k == b) && compute (k+1) x
-    compute k (Or b x)  = (a k == b) || compute (k+1) x
-    compute k (Decompose x y) 
-      | a k = compute (k+1) y
-      | otherwise = compute (k+1) x
-
 unfn :: Functional -> UCF 
 unfn f0 = case getConst f0 of
   Just b -> Const b
@@ -96,19 +85,21 @@ unpair n = (xr + 2*x, yr + 2*y) where
   (q, yr) = divMod p 2
   (x, y) = unpair q
 
-enum :: Natural -> UCF
-enum 0 = Const False
-enum 1 = Const True
-enum n0 = NonConst (enum' (n0-2)) where
-  enum' :: Natural -> UCF'
-  enum' 0 = Head False
-  enum' 1 = Head True
-  enum' n | n' <- n - 2, q <- div n' 5 = case mod n' 5 of
-    0 -> And False (enum' q)
-    1 -> And True  (enum' q)
-    2 -> Or False (enum' q)
-    3 -> Or True  (enum' q)
-    _ | (n1, n2) <- unpair q -> Decompose (enum' n1) (enum' n2)
+enum :: Natural -> Functional
+enum 0 = const False
+enum 1 = const True
+enum n0 = fn' (n0-2) where
+  fn' f a = compute 0 f where
+    compute k 0 = not (a k)
+    compute k 1 = a k
+    compute k n | n' <- n - 2, q <- div n' 5 = case mod n' 5 of
+      0 -> not (a k) && compute (k+1) q
+      1 -> a k && compute (k+1) q
+      2 -> not (a k) || compute (k+1) q
+      3 -> a k || compute (k+1) q
+      _ | (n1, n2) <- unpair q -> if a k
+         then compute (k+1) n1
+         else compute (k+1) n2
 
 denum :: UCF -> Natural
 denum (Const False) = 0
@@ -126,4 +117,4 @@ type Iso' s a = forall p f. (Profunctor p, Functor f) => p a (f a) -> p s (f s)
 
 -- | Inductive Hyper functions from Bool to Bool are isomorphic to the natural numbers.
 _Natural :: Iso' Natural (Hyper Bool Bool)
-_Natural = dimap (ana (fn . enum)) (fmap (cata (denum . unfn)))
+_Natural = dimap (ana enum) (fmap (cata (denum . unfn)))
