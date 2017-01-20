@@ -63,9 +63,11 @@ _Natural = dimap (ana enum) (fmap (cata denum)) where
     (nq, nr) = divMod n 2
 
   shift :: Bool -> Functional -> Functional
-  shift b f = f . prepend b
-    prepend b _ 0 = b
-    prepend _ a n = a (n-1)
+  shift b f = f . prepend b 
+    
+  prepend :: Bool -> Cantor -> Natural -> Bool
+  prepend bb _ 0 = bb 
+  prepend _ a n = a (n-1)
 
   getConst :: Functional -> Maybe Bool
   getConst f
