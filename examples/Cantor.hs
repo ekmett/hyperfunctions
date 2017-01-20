@@ -65,7 +65,7 @@ _Natural = dimap (ana enum) (fmap (cata denum)) where
   shift :: Bool -> Functional -> Functional
   shift b f = f . prepend b 
     
-  prepend :: Bool -> Cantor -> Natural -> Bool
+  prepend :: Bool -> Cantor -> Cantor 
   prepend bb _ 0 = bb 
   prepend _ a n = a (n-1)
 
