@@ -45,7 +45,7 @@ roll = coerce
 ana :: (x -> (x -> a) -> b) -> x -> Hyper a b
 ana psi = f where f x = Hyper $ \z -> psi x (invoke z . f)
 
--- | From "Generalizing the augment combinator" by Ghani, Uustali and Vene.
+-- | From "Generalizing the augment combinator" by Ghani, Uustalu and Vene.
 --
 -- @
 -- 'cata' phi ('push' f h) ≡ phi $ \\g -> f $ g ('cata' phi h)
