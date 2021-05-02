@@ -9,6 +9,7 @@ Links
 - [Paper: Zip fusion with Hyperfunctions](http://citeseerx.ist.psu.edu/viewdoc/download?doi=10.1.1.36.4961&rep=rep1&type=pdf)
 - [Paper: Categories of processes enriched in final coalgebras](https://link.springer.com/chapter/10.1007/3-540-45315-6_20)
 - [Seemingly Impossible functional programs](http://math.andrej.com/2007/09/28/seemingly-impossible-functional-programs/)
+- [Hyperfunctions by Donnacha Oisín Kidney](https://doisinkidney.com/posts/2021-03-14-hyperfunctions.html)
 
 Contact Information
 -------------------
